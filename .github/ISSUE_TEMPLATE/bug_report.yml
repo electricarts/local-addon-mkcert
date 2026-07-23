@@ -1,0 +1,62 @@
+name: Bug report
+description: Report a reproducible problem with the add-on
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Do not include private keys, root CA keys, or unredacted private site data.
+  - type: input
+    id: local-version
+    attributes:
+      label: Local version
+      placeholder: "10.1.1"
+    validations:
+      required: true
+  - type: input
+    id: addon-version
+    attributes:
+      label: Add-on version
+      placeholder: "0.1.2"
+    validations:
+      required: true
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS version
+    validations:
+      required: true
+  - type: input
+    id: mkcert-version
+    attributes:
+      label: mkcert version
+    validations:
+      required: true
+  - type: dropdown
+    id: web-server
+    attributes:
+      label: Site web server
+      options:
+        - nginx
+        - Apache
+        - Both
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and redacted logs
+    validations:
+      required: true

@@ -1,0 +1,11 @@
+src/
+.github/
+node_modules/
+coverage/
+.env
+*.log
+*.tgz
+.DS_Store
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
+tsconfig.json
