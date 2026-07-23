@@ -5,6 +5,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.5] - 2026-07-23
+
+### Changed
+
+- Explain that existing Local certificates can be replaced with trusted mkcert certificates.
+- Clarify the certificate generation and mkcert status button labels.
+
 ## [0.1.4] - 2026-07-23
 
 ### Fixed
@@ -35,6 +42,7 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Avoid starting a duplicate Local router that could cause port 80/443 conflicts.
 - Remove a stretched panel border in Local's Site Overview.
 
+[0.1.5]: https://github.com/electricarts/local-addon-mkcert/releases/tag/v0.1.5
 [0.1.4]: https://github.com/electricarts/local-addon-mkcert/releases/tag/v0.1.4
 [0.1.3]: https://github.com/electricarts/local-addon-mkcert/releases/tag/v0.1.3
 [0.1.2]: https://github.com/electricarts/local-addon-mkcert/releases/tag/v0.1.2

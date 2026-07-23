@@ -84,8 +84,9 @@ export default function (context: LocalRenderer.AddonRendererContext): void {
       <section style={panelStyle}>
         <h3 style={{ margin: '0 0 8px' }}>mkcert SSL</h3>
         <p style={{ margin: '0 0 10px' }}>
-          New sites automatically receive an mkcert certificate. This works with both Apache
-          and nginx because HTTPS terminates at Local&apos;s central router.
+          New sites automatically receive an mkcert certificate. For existing sites, you can
+          replace Local&apos;s certificate with a trusted mkcert certificate. This works with
+          both Apache and nginx because HTTPS terminates at Local&apos;s central router.
         </p>
         {status ? (
           <p style={{ margin: '0 0 10px' }}>
@@ -107,7 +108,7 @@ export default function (context: LocalRenderer.AddonRendererContext): void {
             disabled={!ready || busy}
             onClick={() => void generate()}
           >
-            {busy ? 'Please wait…' : 'Generate certificate with mkcert'}
+            {busy ? 'Please wait…' : 'Generate new certificate with mkcert'}
           </button>
           <button
             type="button"
@@ -115,7 +116,7 @@ export default function (context: LocalRenderer.AddonRendererContext): void {
             disabled={busy}
             onClick={() => void refreshStatus()}
           >
-            Check status again
+            Check mkcert status again
           </button>
         </div>
         {result ? (
