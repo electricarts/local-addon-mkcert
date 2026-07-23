@@ -1,7 +1,7 @@
 {
   "name": "local-addon-mkcert",
   "productName": "mkcert SSL",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "author": "Mario Peischl",
   "description": "Creates locally trusted mkcert certificates for Local sites on macOS.",
   "keywords": [
@@ -42,7 +42,7 @@
     "build": "tsc",
     "clean": "node -e \"require('fs').rmSync('lib', { recursive: true, force: true })\"",
     "prepare": "npm run build",
-    "test": "npm run build && node --test lib/**/*.test.js",
+    "test": "npm run build && node --test lib/*.test.js",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

@@ -27,7 +27,7 @@ proxied to the site's web server.
 - macOS
 - Local 9 or later
 - mkcert
-- Node.js 20 or later only when building from source
+- Node.js 22.12 or later only when building from source
 
 Install and initialize mkcert once:
 
