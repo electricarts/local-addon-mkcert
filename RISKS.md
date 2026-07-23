@@ -22,6 +22,14 @@ A Local update, domain change, Trust action, or router rebuild can overwrite the
 Changing the domain of an existing site does not fire `siteAdded`; use the manual action after a
 domain change.
 
+## Local SSL status integration
+
+After successfully installing a certificate, the add-on clears Local's `site-trust-error` and
+`ssl-untrusted` banners and emits Local's `siteCertTrusted` event so the built-in SSL status is
+rechecked. These event names and banner IDs are not part of a versioned public contract and may
+change in a future Local release. Failure to refresh the UI does not roll back an otherwise
+successful certificate installation.
+
 ## Local-specific file paths
 
 The macOS MVP writes to:

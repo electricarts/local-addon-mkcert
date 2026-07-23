@@ -10,7 +10,7 @@ proxied to the site's web server.
 ## Features
 
 - Automatically creates a certificate when Local fires the `siteAdded` action.
-- Provides a manual **Generate certificate with mkcert** action on every Site Overview.
+- Provides a manual **Generate new certificate with mkcert** action on every Site Overview.
 - Detects mkcert from `PATH`, Homebrew on Intel or Apple Silicon, and MacPorts.
 - Checks for the mkcert root CA and its matching certificate in the macOS Keychain.
 - Calls external programs with `execFile` and argument arrays, never through a shell.
@@ -20,6 +20,7 @@ proxied to the site's web server.
 - Preserves Local's original files once as `.local-original`.
 - Serializes operations so simultaneous site creation cannot race.
 - Refreshes the router configuration and safely reloads the existing nginx master process.
+- Clears stale Local SSL trust warnings after a successful mkcert installation.
 - Writes structured messages to Local's log and displays actionable errors in the UI.
 
 ## Requirements
@@ -87,7 +88,7 @@ reload it.
 ### Manual
 
 Open a site and find **mkcert SSL** on the **Overview** screen. When the status is **Ready**,
-choose **Generate certificate with mkcert**.
+choose **Generate new certificate with mkcert**.
 
 ## Verify an installation
 

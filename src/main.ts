@@ -10,6 +10,7 @@ import {
 } from './shared';
 
 let operationQueue: Promise<void> = Promise.resolve();
+const LOCAL_SSL_BANNER_IDS = ['site-trust-error', 'ssl-untrusted'] as const;
 
 function serialize<T>(operation: () => Promise<T>): Promise<T> {
   const result = operationQueue.then(operation, operation);
@@ -35,6 +36,19 @@ export default function (context: LocalMain.AddonMainContext): void {
         const result = await installCertificateForSite(site, () => reloadRouter(router));
         if (result.ok) {
           logger.info(result.message);
+          try {
+            for (const id of LOCAL_SSL_BANNER_IDS) {
+              LocalMain.sendIPCEvent('clearSiteBanner', {
+                siteID: site.id,
+                id,
+              });
+            }
+            LocalMain.sendIPCEvent('siteCertTrusted', site, true);
+          } catch (error) {
+            logger.warn(
+              `The certificate was installed, but Local's SSL status could not be refreshed: ${errorMessage(error)}`,
+            );
+          }
         } else {
           logger.warn(result.message);
         }
