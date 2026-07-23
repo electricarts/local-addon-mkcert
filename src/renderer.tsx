@@ -51,9 +51,12 @@ export default function (context: LocalRenderer.AddonRendererContext): void {
       background: 'transparent',
       border: 0,
       boxSizing: 'border-box',
+      flex: '0 1 auto',
       margin: 0,
+      maxWidth: 560,
+      overflowWrap: 'anywhere',
       padding: '24px 26px',
-      width: '100%',
+      width: 'clamp(360px, 36vw, 560px)',
     };
     const primaryButtonStyle: React.CSSProperties = {
       background: ready ? '#51bb7b' : '#666',
