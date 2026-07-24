@@ -122,7 +122,7 @@ export default function (context: LocalRenderer.AddonRendererContext): void {
         {result ? (
           <p
             role="status"
-            style={{ color: result.ok ? '#1d6b3b' : '#a13d2d', margin: '12px 0 0' }}
+            style={{ color: result.ok ? '#1d6b3b' : '#ff5c64', margin: '12px 0 0' }}
           >
             {result.message}
           </p>
