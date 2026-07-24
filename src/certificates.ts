@@ -79,7 +79,7 @@ async function replaceCertificatePair(
 
 export async function installCertificateForSite(
   site: Local.Site,
-  reloadRouter: () => Promise<void>,
+  reloadRouter: () => Promise<boolean>,
 ): Promise<GenerateResult> {
   const status = await getMkcertStatus();
   if (!status.ready || !status.binaryPath) {
@@ -112,14 +112,16 @@ export async function installCertificateForSite(
   }
 
   try {
-    await reloadRouter();
+    const routerReloaded = await reloadRouter();
     return {
       ok: true,
       domain,
       certificatePath: paths.certificate,
       keyPath: paths.key,
-      routerReloaded: true,
-      message: `The mkcert certificate for ${domain} was installed and the Local router was reloaded.`,
+      routerReloaded,
+      message: routerReloaded
+        ? `The mkcert certificate for ${domain} was installed and the Local router was reloaded.`
+        : `The mkcert certificate for ${domain} was installed. The Local router is not running and will use it the next time it starts.`,
     };
   } catch (error) {
     return {

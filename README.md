@@ -83,7 +83,8 @@ When a site is added, the add-on writes:
 ```
 
 It then refreshes Local's router configuration and asks the running nginx master process to
-reload it.
+reload it. If the router is not running, the certificate is installed without an error and is
+loaded the next time Local starts the router.
 
 ### Manual
 

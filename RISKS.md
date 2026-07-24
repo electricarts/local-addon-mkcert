@@ -13,8 +13,9 @@ The current implementation:
 3. validates that the PID belongs to a running process;
 4. asks Local's bundled nginx binary to reload its configuration.
 
-If the PID file is stale, the add-on does not start or terminate another process. It asks the
-user to quit and restart Local.
+If the PID file is missing or stale, the add-on treats the router as stopped. It does not start
+or terminate another process; the new certificate is loaded the next time Local starts the
+router.
 
 ## Local may replace certificates
 

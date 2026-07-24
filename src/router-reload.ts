@@ -15,13 +15,23 @@ export function parseRouterPid(value: string): number {
   return pid;
 }
 
-function assertProcessExists(pid: number): void {
+function processExists(pid: number): boolean {
   try {
     process.kill(pid, 0);
+    return true;
   } catch {
-    throw new Error(
-      'The Local router PID file is stale. Quit Local completely and restart it.',
-    );
+    return false;
+  }
+}
+
+export async function readRouterPid(pidPath: string): Promise<number | null> {
+  try {
+    return parseRouterPid(await fs.readFile(pidPath, 'utf8'));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return null;
+    }
+    throw error;
   }
 }
 
@@ -31,7 +41,7 @@ function assertProcessExists(pid: number): void {
  * leave an older router worker attached to ports 80/443, causing a second
  * process to fail with "Address already in use".
  */
-export async function reloadRouter(router: Services.Router): Promise<void> {
+export async function reloadRouter(router: Services.Router): Promise<boolean> {
   await router.refresh();
 
   const runPath = path.join(
@@ -45,8 +55,10 @@ export async function reloadRouter(router: Services.Router): Promise<void> {
   );
   const configPath = path.join(runPath, 'conf', 'nginx.conf');
   const pidPath = path.join(runPath, 'logs', 'nginx.pid');
-  const pid = parseRouterPid(await fs.readFile(pidPath, 'utf8'));
-  assertProcessExists(pid);
+  const pid = await readRouterPid(pidPath);
+  if (pid === null || !processExists(pid)) {
+    return false;
+  }
 
   await execFileAsync(
     router.nginxPath,
@@ -57,4 +69,5 @@ export async function reloadRouter(router: Services.Router): Promise<void> {
       timeout: 30_000,
     },
   );
+  return true;
 }
