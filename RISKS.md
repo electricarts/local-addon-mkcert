@@ -25,11 +25,12 @@ domain change.
 
 ## Local SSL status integration
 
-After successfully installing a certificate, the add-on clears Local's `site-trust-error` and
-`ssl-untrusted` banners and emits Local's `siteCertTrusted` event so the built-in SSL status is
-rechecked. These event names and banner IDs are not part of a versioned public contract and may
-change in a future Local release. Failure to refresh the UI does not roll back an otherwise
-successful certificate installation.
+After successfully installing a certificate, the add-on emits Local's `siteCertTrusted` event
+and then clears Local's `site-trust-error` and `ssl-untrusted` banners. The same cleanup runs
+when a marked site starts, because Local's asynchronous certificate check can otherwise recreate
+the stale banner after the first clear. These event names and banner IDs are not part of a
+versioned public contract and may change in a future Local release. Failure to refresh the UI
+does not roll back an otherwise successful certificate installation.
 
 ## Local URL integration
 

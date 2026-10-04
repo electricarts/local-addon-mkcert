@@ -3,7 +3,7 @@ import * as LocalMain from '@getflywheel/local/main';
 import { errorMessage, installCertificateForSite } from './certificates';
 import { getMkcertStatus } from './mkcert';
 import { reloadRouter } from './router-reload';
-import { withMkcertHttpsEnabled } from './site-https';
+import { hasMkcertHttpsEnabled, withMkcertHttpsEnabled } from './site-https';
 import { getWordPressHttpsUrls } from './wordpress-urls';
 import {
   IPC_GENERATE_FOR_SITE,
@@ -13,6 +13,18 @@ import {
 
 let operationQueue: Promise<void> = Promise.resolve();
 const LOCAL_SSL_BANNER_IDS = ['site-trust-error', 'ssl-untrusted'] as const;
+
+function refreshLocalSslStatus(site: Local.Site): void {
+  // Let Local recalculate its certificate status first. Clearing afterwards avoids
+  // Local's asynchronous check re-adding the stale ssl-untrusted banner.
+  LocalMain.sendIPCEvent('siteCertTrusted', site, true);
+  for (const id of LOCAL_SSL_BANNER_IDS) {
+    LocalMain.sendIPCEvent('clearSiteBanner', {
+      siteID: site.id,
+      id,
+    });
+  }
+}
 
 function serialize<T>(operation: () => Promise<T>): Promise<T> {
   const result = operationQueue.then(operation, operation);
@@ -101,13 +113,7 @@ export default function (context: LocalMain.AddonMainContext): void {
 
           logger.info(resultWithHttps.message);
           try {
-            for (const id of LOCAL_SSL_BANNER_IDS) {
-              LocalMain.sendIPCEvent('clearSiteBanner', {
-                siteID: site.id,
-                id,
-              });
-            }
-            LocalMain.sendIPCEvent('siteCertTrusted', site, true);
+            refreshLocalSslStatus(site);
           } catch (error) {
             logger.warn(
               `The certificate was installed, but Local's SSL status could not be refreshed: ${errorMessage(error)}`,
@@ -152,6 +158,20 @@ export default function (context: LocalMain.AddonMainContext): void {
         title: 'mkcert SSL',
         message: result.message,
       });
+    }
+  });
+
+  LocalMain.HooksMain.addAction('siteStarted', (site: Local.Site) => {
+    if (!hasMkcertHttpsEnabled(site)) {
+      return;
+    }
+
+    try {
+      refreshLocalSslStatus(site);
+    } catch (error) {
+      logger.warn(
+        `The mkcert certificate is installed, but Local's SSL banner could not be cleared after site start: ${errorMessage(error)}`,
+      );
     }
   });
 
