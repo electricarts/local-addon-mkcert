@@ -20,6 +20,10 @@ proxied to the site's web server.
 - Preserves Local's original files once as `.local-original`.
 - Serializes operations so simultaneous site creation cannot race.
 - Refreshes the router configuration and safely reloads the existing nginx master process.
+- Marks successfully configured sites as HTTPS-ready through Local's supported `customOptions`
+  data and makes Local's **Open site** and **WP Admin** actions use `https://`.
+- Updates WordPress `home` and `siteurl` to their HTTPS equivalents through Local's WP-CLI
+  service, preserving the configured host and path.
 - Clears stale Local SSL trust warnings after a successful mkcert installation.
 - Writes structured messages to Local's log and displays actionable errors in the UI.
 
@@ -84,7 +88,13 @@ When a site is added, the add-on writes:
 
 It then refreshes Local's router configuration and asks the running nginx master process to
 reload it. If the router is not running, the certificate is installed without an error and is
-loaded the next time Local starts the router.
+loaded the next time Local starts the router. After a successful installation, the add-on stores
+its own HTTPS-ready marker in Local's `customOptions` object. Local's built-in **Open site** and
+**WP Admin** actions then use `https://` automatically. The add-on also updates WordPress'
+`home` and `siteurl` options to HTTPS through Local's WP-CLI service, so no manual change in the
+WordPress admin area is required. Only the protocol is changed; the configured host, path, and
+trailing slash are preserved. If WordPress is not ready when the automatic hook runs, the UI
+reports that separately and the manual action can be run again after the site is ready.
 
 ### Manual
 
@@ -94,11 +104,13 @@ choose **Generate new certificate with mkcert**.
 ## Verify an installation
 
 1. Create a site such as `mkcert-test.local`.
-2. Open it in Safari or Chrome.
-3. Inspect the served certificate.
-4. Confirm that the issuer is **mkcert development CA**.
-5. Confirm that the browser shows no certificate warning.
-6. Repeat with one Apache and one nginx site if both environments are available.
+2. Click Local's **Open site** and **WP Admin** buttons and confirm they open `https://` URLs.
+3. In WordPress, open **Settings → General** and confirm both **WordPress Address (URL)** and
+   **Site Address (URL)** use `https://`.
+4. Open the site in Safari or Chrome and inspect the served certificate.
+5. Confirm that the issuer is **mkcert development CA**.
+6. Confirm that the browser shows no certificate warning.
+7. Repeat with one Apache and one nginx site if both environments are available.
 
 Local log messages include:
 

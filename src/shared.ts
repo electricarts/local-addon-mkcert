@@ -18,5 +18,7 @@ export interface GenerateResult {
   certificatePath?: string;
   keyPath?: string;
   routerReloaded?: boolean;
+  httpsEnabled?: boolean;
+  wordpressUrlsUpdated?: boolean;
   message: string;
 }

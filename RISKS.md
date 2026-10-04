@@ -31,6 +31,24 @@ rechecked. These event names and banner IDs are not part of a versioned public c
 change in a future Local release. Failure to refresh the UI does not roll back an otherwise
 successful certificate installation.
 
+## Local URL integration
+
+Local's built-in Trust action trusts a certificate in the operating-system/browser certificate
+store and emits a `siteCertTrusted` event; it does not persist an HTTPS flag on the site record.
+Local's `Site.url` and `Site.adminUrl` are generated as HTTP URLs and then passed through the
+renderer filters `siteUrl` and `siteAdminUrl`. After mkcert succeeds, this add-on stores the
+namespaced `mkcert-ssl.https` marker in the site's `customOptions` object and uses those filters
+to switch Local's built-in **Open site** and **WP Admin** actions to HTTPS. It also reads
+WordPress `home` and `siteurl` through Local's `wpCli` service, updates only their protocol to
+`https://`, and verifies both values afterward. The configured host, path, and trailing slash
+are preserved.
+
+If WordPress is not ready or an option update cannot be verified, certificate installation and
+the Local URL marker still succeed, but the result reports that WordPress URL migration failed;
+running the manual action again after the site is ready retries it. The filter names,
+`customOptions` persistence, and `wpCli` service are part of the current Local add-on
+API/runtime behavior and should be verified against future Local releases.
+
 ## Local-specific file paths
 
 The macOS MVP writes to:

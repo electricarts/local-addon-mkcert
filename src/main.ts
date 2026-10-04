@@ -3,6 +3,8 @@ import * as LocalMain from '@getflywheel/local/main';
 import { errorMessage, installCertificateForSite } from './certificates';
 import { getMkcertStatus } from './mkcert';
 import { reloadRouter } from './router-reload';
+import { withMkcertHttpsEnabled } from './site-https';
+import { getWordPressHttpsUrls } from './wordpress-urls';
 import {
   IPC_GENERATE_FOR_SITE,
   IPC_GET_STATUS,
@@ -22,7 +24,7 @@ function serialize<T>(operation: () => Promise<T>): Promise<T> {
 }
 
 export default function (context: LocalMain.AddonMainContext): void {
-  const { localLogger, router, siteData } = LocalMain.getServiceContainer().cradle;
+  const { localLogger, router, siteData, wpCli } = LocalMain.getServiceContainer().cradle;
   const logger = localLogger.child({
     thread: 'main',
     addon: 'mkcert-ssl',
@@ -35,7 +37,69 @@ export default function (context: LocalMain.AddonMainContext): void {
       try {
         const result = await installCertificateForSite(site, () => reloadRouter(router));
         if (result.ok) {
-          logger.info(result.message);
+          let httpsEnabled = false;
+          let wordpressUrlsUpdated = false;
+          let wordpressUrlError: string | undefined;
+
+          try {
+            const [home, siteurl] = await Promise.all([
+              wpCli.getOption(site, 'home'),
+              wpCli.getOption(site, 'siteurl'),
+            ]);
+            const httpsUrls = getWordPressHttpsUrls(home, siteurl);
+
+            if (home?.trim() !== httpsUrls.home) {
+              await wpCli.run(site, ['option', 'update', 'home', httpsUrls.home]);
+            }
+            if (siteurl?.trim() !== httpsUrls.siteurl) {
+              await wpCli.run(site, ['option', 'update', 'siteurl', httpsUrls.siteurl]);
+            }
+
+            const [verifiedHome, verifiedSiteurl] = await Promise.all([
+              wpCli.getOption(site, 'home'),
+              wpCli.getOption(site, 'siteurl'),
+            ]);
+            if (
+              verifiedHome?.trim() !== httpsUrls.home ||
+              verifiedSiteurl?.trim() !== httpsUrls.siteurl
+            ) {
+              throw new Error('Local could not verify the updated WordPress URL options.');
+            }
+            wordpressUrlsUpdated = true;
+          } catch (error) {
+            wordpressUrlError = errorMessage(error);
+            logger.warn(
+              `The certificate was installed, but WordPress home/siteurl could not be switched to HTTPS: ${wordpressUrlError}`,
+            );
+          }
+
+          try {
+            siteData.updateSite(site.id, {
+              customOptions: withMkcertHttpsEnabled(site.customOptions),
+            });
+            httpsEnabled = true;
+          } catch (error) {
+            logger.warn(
+              `The certificate was installed, but Local's HTTPS URL preference could not be saved: ${errorMessage(error)}`,
+            );
+          }
+
+          const resultWithHttps: GenerateResult = {
+            ...result,
+            httpsEnabled,
+            wordpressUrlsUpdated,
+            message: [
+              result.message,
+              httpsEnabled
+                ? `Local's Open site and WP Admin actions now use HTTPS.`
+                : `Local's HTTPS URL preference could not be saved; Open site and WP Admin may still use HTTP.`,
+              wordpressUrlsUpdated
+                ? `WordPress home and siteurl now use HTTPS.`
+                : `WordPress home/siteurl could not be updated automatically${wordpressUrlError ? `: ${wordpressUrlError}` : '.'}`,
+            ].join(' '),
+          };
+
+          logger.info(resultWithHttps.message);
           try {
             for (const id of LOCAL_SSL_BANNER_IDS) {
               LocalMain.sendIPCEvent('clearSiteBanner', {
@@ -49,6 +113,7 @@ export default function (context: LocalMain.AddonMainContext): void {
               `The certificate was installed, but Local's SSL status could not be refreshed: ${errorMessage(error)}`,
             );
           }
+          return resultWithHttps;
         } else {
           logger.warn(result.message);
         }
@@ -82,7 +147,7 @@ export default function (context: LocalMain.AddonMainContext): void {
 
   LocalMain.HooksMain.addAction('siteAdded', async (site: Local.Site) => {
     const result = await generateForSite(site, 'siteAdded');
-    if (!result.ok) {
+    if (!result.ok || result.httpsEnabled === false || result.wordpressUrlsUpdated === false) {
       context.notifier.notify({
         title: 'mkcert SSL',
         message: result.message,

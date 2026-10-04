@@ -1,11 +1,15 @@
 import type * as Local from '@getflywheel/local';
 import * as LocalRenderer from '@getflywheel/local/renderer';
+import { useMkcertHttpsUrl } from './site-https';
 import type { MkcertStatus, GenerateResult } from './shared';
 import { IPC_GENERATE_FOR_SITE, IPC_GET_STATUS } from './shared';
 
 export default function (context: LocalRenderer.AddonRendererContext): void {
   const { React, hooks } = context;
   const { useCallback, useEffect, useState } = React;
+
+  hooks.addFilter('siteUrl', (url: string, site: Local.Site) => useMkcertHttpsUrl(url, site));
+  hooks.addFilter('siteAdminUrl', (url: string, site: Local.Site) => useMkcertHttpsUrl(url, site));
 
   function MkcertPanel({ site }: { site: Local.Site }): React.ReactElement {
     const [status, setStatus] = useState<MkcertStatus | null>(null);
@@ -84,9 +88,12 @@ export default function (context: LocalRenderer.AddonRendererContext): void {
       <section style={panelStyle}>
         <h3 style={{ margin: '0 0 8px' }}>mkcert SSL</h3>
         <p style={{ margin: '0 0 10px' }}>
-          New sites automatically receive an mkcert certificate. For existing sites, you can
-          replace Local&apos;s certificate with a trusted mkcert certificate. This works with
-          both Apache and nginx because HTTPS terminates at Local&apos;s central router.
+          New sites automatically receive a trusted mkcert certificate, and Local&apos;s Open site
+          and WP Admin actions use HTTPS automatically. WordPress&apos; home and siteurl values are
+          switched to HTTPS as well, so no manual URL change or additional Trust action is needed.
+          For existing sites, you can replace Local&apos;s certificate with a trusted mkcert
+          certificate. This works with both Apache and nginx because HTTPS terminates at Local&apos;s
+          central router.
         </p>
         {status ? (
           <p style={{ margin: '0 0 10px' }}>
@@ -122,7 +129,10 @@ export default function (context: LocalRenderer.AddonRendererContext): void {
         {result ? (
           <p
             role="status"
-            style={{ color: result.ok ? '#1d6b3b' : '#ff5c64', margin: '12px 0 0' }}
+            style={{
+              color: result.ok && result.wordpressUrlsUpdated !== false ? '#1d6b3b' : '#ff5c64',
+              margin: '12px 0 0',
+            }}
           >
             {result.message}
           </p>
