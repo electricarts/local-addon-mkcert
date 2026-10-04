@@ -7,6 +7,12 @@ The add-on replaces the certificate and private key used by Local's central rout
 with both Apache and nginx sites because HTTPS terminates at the router before requests are
 proxied to the site's web server.
 
+Without this add-on, using HTTPS for a Local WordPress site can require manually trusting
+Local's certificate in macOS Keychain Access and changing WordPress's `home` and `siteurl`
+values to `https://`. After the one-time mkcert setup, **mkcert SSL handles both steps
+automatically** for new sites: the certificate is already trusted and the WordPress URLs are
+updated, so no manual Keychain or URL changes are needed.
+
 ## Features
 
 - Automatically creates a certificate when Local fires the `siteAdded` action.
