@@ -18,12 +18,19 @@ export default function (context: LocalRenderer.AddonRendererContext): void {
     const [result, setResult] = useState<GenerateResult | null>(null);
     const [busy, setBusy] = useState(false);
 
-    const removeLocalSslBanners = useCallback(() => {
+    const clearLocalSslBanners = useCallback(() => {
       if (!hasMkcertHttpsEnabled(site)) {
         return;
       }
 
       for (const id of LOCAL_SSL_BANNER_IDS) {
+        // Use Local's own event first so its site-info banner hook clears the
+        // banner as well. The store call handles a banner that was already
+        // materialized in the current renderer.
+        LocalRenderer.sendIPCEvent('clearSiteBanner', {
+          siteID: site.id,
+          id,
+        });
         store.$banner.removeBanner(`${site.id}-${id}`);
       }
     }, [site, store]);
@@ -33,14 +40,14 @@ export default function (context: LocalRenderer.AddonRendererContext): void {
         return undefined;
       }
 
-      // Local performs its certificate check asynchronously. Remove the stale
-      // banner now and after the check has had time to add it to the store.
-      removeLocalSslBanners();
-      const timers = [0, 250, 1000].map((delay) =>
-        setTimeout(removeLocalSslBanners, delay),
-      );
-      return () => timers.forEach((timer) => clearTimeout(timer));
-    }, [removeLocalSslBanners, site]);
+      // Local performs its certificate check asynchronously. Keep clearing the
+      // stale banner while this site overview is mounted so a late result from
+      // Local cannot put the already trusted mkcert site back into the warning
+      // state.
+      clearLocalSslBanners();
+      const interval = setInterval(clearLocalSslBanners, 500);
+      return () => clearInterval(interval);
+    }, [clearLocalSslBanners, site]);
 
     const refreshStatus = useCallback(async () => {
       setBusy(true);

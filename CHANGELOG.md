@@ -5,6 +5,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.12] - 2026-10-04
+
+### Fixed
+
+- Clear Local's stale SSL trust banner through Local's own banner event and keep the cleanup
+  active while the Site Overview performs its asynchronous certificate check.
+
 ## [0.1.11] - 2026-10-04
 
 ### Fixed
@@ -89,6 +96,7 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Avoid starting a duplicate Local router that could cause port 80/443 conflicts.
 - Remove a stretched panel border in Local's Site Overview.
 
+[0.1.12]: https://github.com/electricarts/local-addon-mkcert/releases/tag/v0.1.12
 [0.1.11]: https://github.com/electricarts/local-addon-mkcert/releases/tag/v0.1.11
 [0.1.10]: https://github.com/electricarts/local-addon-mkcert/releases/tag/v0.1.10
 [0.1.9]: https://github.com/electricarts/local-addon-mkcert/releases/tag/v0.1.9
