@@ -1,7 +1,7 @@
 {
   "name": "local-addon-mkcert",
   "productName": "mkcert SSL",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "author": "Mario Peischl",
   "description": "Creates locally trusted mkcert certificates for Local sites on macOS.",
   "keywords": [

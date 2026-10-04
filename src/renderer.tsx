@@ -1,11 +1,13 @@
 import type * as Local from '@getflywheel/local';
 import * as LocalRenderer from '@getflywheel/local/renderer';
-import { useMkcertHttpsUrl } from './site-https';
+import { hasMkcertHttpsEnabled, useMkcertHttpsUrl } from './site-https';
 import type { MkcertStatus, GenerateResult } from './shared';
 import { IPC_GENERATE_FOR_SITE, IPC_GET_STATUS } from './shared';
 
+const LOCAL_SSL_BANNER_IDS = ['site-trust-error', 'ssl-untrusted'] as const;
+
 export default function (context: LocalRenderer.AddonRendererContext): void {
-  const { React, hooks } = context;
+  const { React, hooks, store } = context;
   const { useCallback, useEffect, useState } = React;
 
   hooks.addFilter('siteUrl', (url: string, site: Local.Site) => useMkcertHttpsUrl(url, site));
@@ -15,6 +17,30 @@ export default function (context: LocalRenderer.AddonRendererContext): void {
     const [status, setStatus] = useState<MkcertStatus | null>(null);
     const [result, setResult] = useState<GenerateResult | null>(null);
     const [busy, setBusy] = useState(false);
+
+    const removeLocalSslBanners = useCallback(() => {
+      if (!hasMkcertHttpsEnabled(site)) {
+        return;
+      }
+
+      for (const id of LOCAL_SSL_BANNER_IDS) {
+        store.$banner.removeBanner(`${site.id}-${id}`);
+      }
+    }, [site, store]);
+
+    useEffect(() => {
+      if (!hasMkcertHttpsEnabled(site)) {
+        return undefined;
+      }
+
+      // Local performs its certificate check asynchronously. Remove the stale
+      // banner now and after the check has had time to add it to the store.
+      removeLocalSslBanners();
+      const timers = [0, 250, 1000].map((delay) =>
+        setTimeout(removeLocalSslBanners, delay),
+      );
+      return () => timers.forEach((timer) => clearTimeout(timer));
+    }, [removeLocalSslBanners, site]);
 
     const refreshStatus = useCallback(async () => {
       setBusy(true);

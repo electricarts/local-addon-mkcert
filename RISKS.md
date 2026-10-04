@@ -28,9 +28,11 @@ domain change.
 After successfully installing a certificate, the add-on emits Local's `siteCertTrusted` event
 and then clears Local's `site-trust-error` and `ssl-untrusted` banners. The same cleanup runs
 when a marked site starts, because Local's asynchronous certificate check can otherwise recreate
-the stale banner after the first clear. These event names and banner IDs are not part of a
-versioned public contract and may change in a future Local release. Failure to refresh the UI
-does not roll back an otherwise successful certificate installation.
+the stale banner after the first clear. The renderer also removes those exact banner IDs from
+Local's visible banner store after its asynchronous check. These event names, banner IDs, and
+store methods are not part of a versioned public contract and may change in a future Local
+release. Failure to refresh the UI does not roll back an otherwise successful certificate
+installation.
 
 ## Local URL integration
 
