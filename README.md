@@ -27,6 +27,13 @@ proxied to the site's web server.
 - Clears stale Local SSL trust warnings after a successful mkcert installation.
 - Writes structured messages to Local's log and displays actionable errors in the UI.
 
+## Example in Local
+
+After setup, Local shows the mkcert certificate as trusted and its built-in site actions use
+HTTPS without an additional Trust action:
+
+![Local Site Overview showing a trusted mkcert certificate and HTTPS actions](docs/images/mkcert-ssl-local.png)
+
 ## Requirements
 
 - macOS
