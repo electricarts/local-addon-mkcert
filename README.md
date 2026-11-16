@@ -15,7 +15,9 @@ updated, so no manual Keychain or URL changes are needed.
 
 ## Features
 
-- Automatically creates a certificate when Local fires the `siteAdded` action.
+- Automatically creates a certificate for new standard installations and imported sites through
+  Local's documented site and WordPress installer actions. The workflow waits for Local's router
+  and WordPress provisioning to finish and retries when either is still starting.
 - Provides a manual **Generate new certificate with mkcert** action on every Site Overview.
 - Detects mkcert from `PATH`, Homebrew on Intel or Apple Silicon, and MacPorts.
 - Checks for the mkcert root CA and its matching certificate in the macOS Keychain.
@@ -92,7 +94,8 @@ Restart Local after creating the link.
 
 ### Automatic
 
-When a site is added, the add-on writes:
+When a site is added or imported, the add-on waits until Local has finished provisioning and then
+writes:
 
 ```text
 ~/Library/Application Support/Local/run/router/nginx/certs/<domain>.crt

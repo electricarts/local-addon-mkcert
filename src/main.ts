@@ -12,7 +12,24 @@ import {
 } from './shared';
 
 let operationQueue: Promise<void> = Promise.resolve();
+let initialized = false;
 const LOCAL_SSL_BANNER_IDS = ['site-trust-error', 'ssl-untrusted'] as const;
+const AUTOMATIC_WORKFLOW_DELAYS_MS = [2_000, 7_000, 15_000] as const;
+
+type AutomaticWorkflowSource =
+  | 'siteAdded'
+  | 'wordPressInstaller:standardInstall'
+  | 'wordPressInstaller:import'
+  | 'wordPressInstaller:import:includesWP';
+
+type WorkflowSource = 'manual' | AutomaticWorkflowSource;
+
+interface ScheduledAutomaticWorkflow {
+  site: Local.Site;
+  source: AutomaticWorkflowSource;
+  attempt: number;
+  timer?: ReturnType<typeof setTimeout>;
+}
 
 function refreshLocalSslStatus(site: Local.Site): void {
   // Let Local recalculate its certificate status first. Clearing afterwards avoids
@@ -36,13 +53,23 @@ function serialize<T>(operation: () => Promise<T>): Promise<T> {
 }
 
 export default function (context: LocalMain.AddonMainContext): void {
+  // Local can initialize add-ons more than once while it refreshes its service
+  // graph. Registering the same IPC listeners and actions repeatedly makes
+  // automatic workflows unreliable and produces duplicate-listener warnings.
+  if (initialized) {
+    return;
+  }
+  initialized = true;
+
   const { localLogger, router, siteData, wpCli } = LocalMain.getServiceContainer().cradle;
   const logger = localLogger.child({
     thread: 'main',
     addon: 'mkcert-ssl',
   });
 
-  const generateForSite = async (site: Local.Site, source: 'manual' | 'siteAdded'): Promise<GenerateResult> =>
+  const automaticWorkflows = new Map<string, ScheduledAutomaticWorkflow>();
+
+  const generateForSite = async (site: Local.Site, source: WorkflowSource): Promise<GenerateResult> =>
     serialize(async () => {
       logger.info(`Starting ${source} mkcert workflow for site ${site.id} (${site.domain}).`);
 
@@ -135,6 +162,66 @@ export default function (context: LocalMain.AddonMainContext): void {
       }
     });
 
+  const runAutomaticWorkflow = async (workflow: ScheduledAutomaticWorkflow): Promise<void> => {
+    const currentSite = siteData.getSite(workflow.site.id);
+    if (!currentSite) {
+      automaticWorkflows.delete(workflow.site.id);
+      logger.warn(
+        `Skipping automatic mkcert workflow because site ${workflow.site.id} no longer exists.`,
+      );
+      return;
+    }
+
+    const result = await generateForSite(currentSite, workflow.source);
+    const complete =
+      result.ok && result.httpsEnabled !== false && result.wordpressUrlsUpdated !== false;
+
+    if (complete) {
+      automaticWorkflows.delete(workflow.site.id);
+      return;
+    }
+
+    const nextAttempt = workflow.attempt + 1;
+    if (nextAttempt < AUTOMATIC_WORKFLOW_DELAYS_MS.length) {
+      workflow.attempt = nextAttempt;
+      workflow.timer = setTimeout(() => {
+        void runAutomaticWorkflow(workflow);
+      }, AUTOMATIC_WORKFLOW_DELAYS_MS[nextAttempt]);
+      logger.info(
+        `Automatic mkcert setup for ${currentSite.domain} is not complete yet; retrying in ${AUTOMATIC_WORKFLOW_DELAYS_MS[nextAttempt] / 1000}s.`,
+      );
+      return;
+    }
+
+    automaticWorkflows.delete(workflow.site.id);
+    context.notifier.notify({
+      title: 'mkcert SSL',
+      message: result.message,
+    });
+  };
+
+  const scheduleAutomaticWorkflow = (
+    site: Local.Site,
+    source: AutomaticWorkflowSource,
+  ): void => {
+    const existing = automaticWorkflows.get(site.id);
+    if (existing) {
+      existing.site = site;
+      existing.source = source;
+      return;
+    }
+
+    const workflow: ScheduledAutomaticWorkflow = {
+      site,
+      source,
+      attempt: 0,
+    };
+    automaticWorkflows.set(site.id, workflow);
+    workflow.timer = setTimeout(() => {
+      void runAutomaticWorkflow(workflow);
+    }, AUTOMATIC_WORKFLOW_DELAYS_MS[0]);
+  };
+
   LocalMain.addIpcAsyncListener(IPC_GET_STATUS, async () => getMkcertStatus());
 
   LocalMain.addIpcAsyncListener(
@@ -151,17 +238,22 @@ export default function (context: LocalMain.AddonMainContext): void {
     },
   );
 
-  LocalMain.HooksMain.addAction('siteAdded', async (site: Local.Site) => {
-    const result = await generateForSite(site, 'siteAdded');
-    if (!result.ok || result.httpsEnabled === false || result.wordpressUrlsUpdated === false) {
-      context.notifier.notify({
-        title: 'mkcert SSL',
-        message: result.message,
-      });
-    }
-  });
+  const hooks = context.hooks;
+  const automaticHooks: AutomaticWorkflowSource[] = [
+    'siteAdded',
+    'wordPressInstaller:standardInstall',
+    'wordPressInstaller:import',
+    'wordPressInstaller:import:includesWP',
+  ];
 
-  LocalMain.HooksMain.addAction('siteStarted', (site: Local.Site) => {
+  for (const hook of automaticHooks) {
+    hooks.addAction(hook, (site: Local.Site) => {
+      logger.info(`Received ${hook} for site ${site.id} (${site.domain}); scheduling mkcert setup.`);
+      scheduleAutomaticWorkflow(site, hook);
+    });
+  }
+
+  hooks.addAction('siteStarted', (site: Local.Site) => {
     if (!hasMkcertHttpsEnabled(site)) {
       return;
     }

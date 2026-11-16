@@ -17,6 +17,7 @@ export default function (context: LocalRenderer.AddonRendererContext): void {
     const [status, setStatus] = useState<MkcertStatus | null>(null);
     const [result, setResult] = useState<GenerateResult | null>(null);
     const [busy, setBusy] = useState(false);
+    const [showInfo, setShowInfo] = useState(false);
 
     const clearLocalSslBanners = useCallback(() => {
       if (!hasMkcertHttpsEnabled(site)) {
@@ -116,18 +117,94 @@ export default function (context: LocalRenderer.AddonRendererContext): void {
       opacity: busy ? 0.6 : 1,
       padding: '10px 16px',
     };
+    const infoButtonStyle: React.CSSProperties = {
+      alignItems: 'center',
+      background: 'transparent',
+      border: '1px solid #9b9b9b',
+      borderRadius: '50%',
+      color: '#c8c8c8',
+      cursor: 'pointer',
+      display: 'inline-flex',
+      fontSize: 15,
+      fontWeight: 700,
+      height: 22,
+      justifyContent: 'center',
+      lineHeight: 1,
+      padding: 0,
+      width: 22,
+    };
+    const infoPopupStyle: React.CSSProperties = {
+      background: '#303030',
+      border: '1px solid #626262',
+      borderRadius: 4,
+      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.35)',
+      boxSizing: 'border-box',
+      color: '#f1f1f1',
+      left: 0,
+      padding: '16px 18px',
+      position: 'absolute',
+      top: 34,
+      width: 'min(520px, 100%)',
+      zIndex: 10,
+    };
 
     return (
       <section style={panelStyle}>
-        <h3 style={{ margin: '0 0 8px' }}>mkcert SSL</h3>
-        <p style={{ margin: '0 0 10px' }}>
-          New sites automatically receive a trusted mkcert certificate, and Local&apos;s Open site
-          and WP Admin actions use HTTPS automatically. WordPress&apos; home and siteurl values are
-          switched to HTTPS as well, so no manual URL change or additional Trust action is needed.
-          For existing sites, you can replace Local&apos;s certificate with a trusted mkcert
-          certificate. This works with both Apache and nginx because HTTPS terminates at Local&apos;s
-          central router.
-        </p>
+        <div style={{ position: 'relative' }}>
+          <div style={{ alignItems: 'center', display: 'flex', gap: 8, marginBottom: 8 }}>
+            <h3 style={{ margin: 0 }}>mkcert SSL</h3>
+            <button
+              type="button"
+              aria-expanded={showInfo}
+              aria-label={showInfo ? 'Hide mkcert SSL information' : 'Show mkcert SSL information'}
+              style={infoButtonStyle}
+              onClick={() => setShowInfo((visible) => !visible)}
+            >
+              i
+            </button>
+          </div>
+          <p style={{ margin: '0 0 10px' }}>Automatic trusted HTTPS for new and imported sites.</p>
+          {showInfo ? (
+            <div role="dialog" aria-label="mkcert SSL information" style={infoPopupStyle}>
+              <div
+                style={{
+                  alignItems: 'center',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  marginBottom: 8,
+                }}
+              >
+                <strong>About mkcert SSL</strong>
+                <button
+                  type="button"
+                  aria-label="Close mkcert SSL information"
+                  style={{
+                    background: 'transparent',
+                    border: 0,
+                    color: '#c8c8c8',
+                    cursor: 'pointer',
+                    fontSize: 22,
+                    lineHeight: 1,
+                    padding: '0 2px',
+                  }}
+                  onClick={() => setShowInfo(false)}
+                >
+                  ×
+                </button>
+              </div>
+              <p style={{ margin: '0 0 8px' }}>
+                New sites automatically receive a trusted mkcert certificate. Local&apos;s Open site
+                and WP Admin actions use HTTPS automatically, and WordPress&apos; home and siteurl
+                values are switched to HTTPS as well. No manual Keychain, URL, or Trust action is
+                needed.
+              </p>
+              <p style={{ margin: 0 }}>
+                For existing sites, use the button below to replace Local&apos;s certificate. This
+                works with Apache and nginx because HTTPS terminates at Local&apos;s central router.
+              </p>
+            </div>
+          ) : null}
+        </div>
         {status ? (
           <p style={{ margin: '0 0 10px' }}>
             Status: {ready ? 'Ready' : 'Setup required'}
