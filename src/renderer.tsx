@@ -137,7 +137,7 @@ export default function (context: LocalRenderer.AddonRendererContext): void {
     const primaryButtonStyle: React.CSSProperties = {
       background: ready ? '#51bb7b' : '#666',
       border: `1px solid ${ready ? '#51bb7b' : '#777'}`,
-      borderRadius: 4,
+      borderRadius: 9999,
       boxSizing: 'border-box',
       color: ready ? '#17231c' : '#d0d0d0',
       cursor: ready && !busy ? 'pointer' : 'not-allowed',
@@ -149,7 +149,7 @@ export default function (context: LocalRenderer.AddonRendererContext): void {
     const secondaryButtonStyle: React.CSSProperties = {
       background: 'transparent',
       border: '1px solid #51bb7b',
-      borderRadius: 4,
+      borderRadius: 9999,
       boxSizing: 'border-box',
       color: '#51bb7b',
       cursor: busy ? 'not-allowed' : 'pointer',
