@@ -8,7 +8,7 @@ const LOCAL_SSL_BANNER_IDS = ['site-trust-error', 'ssl-untrusted'] as const;
 
 export default function (context: LocalRenderer.AddonRendererContext): void {
   const { React, hooks, store } = context;
-  const { useCallback, useEffect, useState } = React;
+  const { useCallback, useEffect, useRef, useState } = React;
 
   hooks.addFilter('siteUrl', (url: string, site: Local.Site) => useMkcertHttpsUrl(url, site));
   hooks.addFilter('siteAdminUrl', (url: string, site: Local.Site) => useMkcertHttpsUrl(url, site));
@@ -18,6 +18,41 @@ export default function (context: LocalRenderer.AddonRendererContext): void {
     const [result, setResult] = useState<GenerateResult | null>(null);
     const [busy, setBusy] = useState(false);
     const [showInfo, setShowInfo] = useState(false);
+    const panelRef = useRef<HTMLElement | null>(null);
+
+    useEffect(() => {
+      const panel = panelRef.current;
+      const container = panel?.parentElement;
+
+      if (!container) {
+        return undefined;
+      }
+
+      const previousStyles = {
+        alignItems: container.style.alignItems,
+        display: container.style.display,
+        flexDirection: container.style.flexDirection,
+        flexWrap: container.style.flexWrap,
+        minWidth: container.style.minWidth,
+      };
+
+      // Local renders SiteInfoOverview add-on content after its normal details
+      // inside the same flex container. Keep our panel beside those details so
+      // the controls remain reachable in Local's smallest window size.
+      container.style.alignItems = 'flex-start';
+      container.style.display = 'flex';
+      container.style.flexDirection = 'row';
+      container.style.flexWrap = 'nowrap';
+      container.style.minWidth = '0';
+
+      return () => {
+        container.style.alignItems = previousStyles.alignItems;
+        container.style.display = previousStyles.display;
+        container.style.flexDirection = previousStyles.flexDirection;
+        container.style.flexWrap = previousStyles.flexWrap;
+        container.style.minWidth = previousStyles.minWidth;
+      };
+    }, []);
 
     const clearLocalSslBanners = useCallback(() => {
       if (!hasMkcertHttpsEnabled(site)) {
@@ -89,33 +124,40 @@ export default function (context: LocalRenderer.AddonRendererContext): void {
       background: 'transparent',
       border: 0,
       boxSizing: 'border-box',
-      flex: '0 1 auto',
-      margin: 0,
-      maxWidth: 560,
+      display: 'flex',
+      flex: '0 1 280px',
+      flexDirection: 'column',
+      margin: '0 0 0 auto',
+      maxWidth: 280,
+      minWidth: 0,
       overflowWrap: 'anywhere',
-      padding: '24px 26px',
-      width: 'clamp(360px, 36vw, 560px)',
+      padding: '14px 16px',
+      width: 'min(280px, 100%)',
     };
     const primaryButtonStyle: React.CSSProperties = {
       background: ready ? '#51bb7b' : '#666',
       border: `1px solid ${ready ? '#51bb7b' : '#777'}`,
       borderRadius: 4,
+      boxSizing: 'border-box',
       color: ready ? '#17231c' : '#d0d0d0',
       cursor: ready && !busy ? 'pointer' : 'not-allowed',
       fontWeight: 600,
       lineHeight: 1.2,
       padding: '10px 16px',
+      width: '100%',
     };
     const secondaryButtonStyle: React.CSSProperties = {
       background: 'transparent',
       border: '1px solid #51bb7b',
       borderRadius: 4,
+      boxSizing: 'border-box',
       color: '#51bb7b',
       cursor: busy ? 'not-allowed' : 'pointer',
       fontWeight: 600,
       lineHeight: 1.2,
       opacity: busy ? 0.6 : 1,
       padding: '10px 16px',
+      width: '100%',
     };
     const infoButtonStyle: React.CSSProperties = {
       alignItems: 'center',
@@ -149,7 +191,7 @@ export default function (context: LocalRenderer.AddonRendererContext): void {
     };
 
     return (
-      <section style={panelStyle}>
+      <section ref={panelRef} style={panelStyle}>
         <div style={{ position: 'relative' }}>
           <div style={{ alignItems: 'center', display: 'flex', gap: 8, marginBottom: 8 }}>
             <h3 style={{ margin: 0 }}>mkcert SSL</h3>
@@ -218,14 +260,22 @@ export default function (context: LocalRenderer.AddonRendererContext): void {
             {line}
           </p>
         ))}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 14 }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10,
+            marginTop: 14,
+            width: '100%',
+          }}
+        >
           <button
             type="button"
             style={primaryButtonStyle}
             disabled={!ready || busy}
             onClick={() => void generate()}
           >
-            {busy ? 'Please wait…' : 'Generate new certificate with mkcert'}
+            {busy ? 'Please wait…' : 'Generate new certificate'}
           </button>
           <button
             type="button"
